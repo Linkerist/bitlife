@@ -84,9 +84,18 @@ void initialize(void)
 	memset(gtable, 0, sizeof(gtable));
 }
 
+void dirname_alloc(int p, int q, char ***dirname)
+{
+	if(!*dirname)
+		*dirname = (char **)xmalloc(sizeof(char *) * MEM_INIT);
+	else if(q - 2 == p)
+		*dirname = (char **)xrealloc(sizeof(char *)(q += MEM_INC_STEP));
+}
+
 void parse_args(int argc, char **argv, char ***dirname)
 {
-	int i, j = 0;
+	int i, j = 0, n;
+	int p = q = 0;
 	for(n = i = 1; i < argc; i = n) {
 		n++;
 		if('-' == argv[i][0] && argv[i][1]) {
@@ -107,10 +116,19 @@ void parse_args(int argc, char **argv, char ***dirname)
 				hflag = TRUE;
 				sflag = TRUE;
 				break;
+			case 'H':
+				usage(CMD_HELP);
+				break;
+			case 'V':
+				version();
+				break;
 			default:
 				fprintf(stderr, "bitlife : Invalid argument - `c' .\n", argv[i][j])
 				break;
 			}
+		} else {
+			dirname_alloc(p, q, dirname);
+			(*dirname)[p++] = argv[i];
 		}
 	}
 }
