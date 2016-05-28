@@ -2,7 +2,9 @@
 #include "bitlife.h"
 #include "xmalloc.h"
 #include "hash.h"
+#include "help.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <locale.h>
 
 /*
@@ -21,19 +23,6 @@ FILE *file_log;
 /* dir_ops.c : listing when synchronize */
 extern int level, *dirs, dir_level_max;
 
-/*
- * list the directories name, relative or full
- */
-void dir_list(char *str)
-{
-	for(; *str; str++) {
-		c = (unsigned char)*str;
-		if(ASCII_ESC_START <= c && c <= ASCII_ESC_END || '\\' == c || ' ' == c) {
-			putc('\\', file_log);
-		}
-	}
-}
-
 /* start synchronize directories */
 start_bitlife(char **dirname, int *dtotal, int *ftotal)
 {
@@ -45,11 +34,16 @@ start_bitlife(char **dirname, int *dtotal, int *ftotal)
 			while(0 < j && '/' == dirname[i][--j])
 				;
 			dirname[i][j + 1] = '\0';
+			
 			dir_list(dirname[i]);
+			dir_parse_top(dirname[i]);
+			fprintf(file_log, "start synchronize .\n");
+			dir_sync_recur(dirname[i], pdtotal, pftotal, 0);
 		}
 	} else {
 		fprintf(file_log, DEFAULT_DIR_SRC);
-		//dir_parse_top(DEFAULT_DIR_SRC, )
+		dir_parse_top(DEFAULT_DIR_SRC);
+		dir_sync_recur(DEFAULT_DIR_SRC, pdtotal, pftotal, 0);
 	}
 }
 
@@ -107,7 +101,53 @@ void parse_args(int argc, char **argv, char ***dirname)
 				fflag = TRUE;
 				break;
 			case 'p':
-				fflag = TRUE;
+				pflag = TRUE;
+				break;
+			case 'P':
+				if(NULL == argv[n]) {
+					fprintf(stderr, "bitlife : missing pattern to -P option.\n");
+					exit(1);
+				}
+				pattern = argv[n++];
+				break;
+			case 'T':
+				if(NULL == argv[n]) {
+					fprintf(stderr, "bitlife : missing target directory to -T option.\n");
+					exit(1);
+				}
+				dir_dst = argv[n++];
+				break;
+			case 't':
+				if(NULL == argv[n]) {
+					fprintf(stderr, "bitlife : missing tag to -t option.\n");
+					exit(1);
+				}
+				sync_tag = argv[n++];
+				break;
+			case 'X':
+				if(NULL == argv[n]) {
+					fprintf(stderr, "bitlife : missing pattern to -X option.\n");
+					exit(1);
+				}
+				xpattern = argv[n++];
+				break;
+			case 'L':
+				if(NULL == (levelstr = argv[n++])) {
+					fprintf(stderr, "bitlife : missing target directory to -L option.\n");
+					exit(1);
+				}
+				level = strtoul(levelstr, NULL, 0) - 1;
+				if(0 > level) {
+					fprintf(stderr, "bitlife : Invalid level, must be greater than 0.\n");
+					exit(1);
+				}
+				break;
+			case 'o':
+				if(NULL == argv[n]) {
+					fprintf(stderr, "bitlife : missing filename to -o option.\n");
+					exit(1);
+				}
+				filename_log = argv[n++];
 				break;
 			case 's':
 				sflag = TRUE;
@@ -123,7 +163,9 @@ void parse_args(int argc, char **argv, char ***dirname)
 				version();
 				break;
 			default:
-				fprintf(stderr, "bitlife : Invalid argument - `c' .\n", argv[i][j])
+				fprintf(stderr, "bitlife : Invalid argument - `c' .\n", argv[i][j]);
+				usage(CMD_ERR);
+				exit(1);
 				break;
 			}
 		} else {
@@ -131,6 +173,8 @@ void parse_args(int argc, char **argv, char ***dirname)
 			(*dirname)[p++] = argv[i];
 		}
 	}
+	if(p)
+		(*dirname)[p] = NULL;
 }
 
 /*
