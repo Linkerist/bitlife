@@ -1,0 +1,7 @@
+
+Bitlife is a back up software for file system, like a version control for various files.
+
+To some degree, should refer to the awesome 'git', ignore file type differences.
+
+In display mode, I like the 'tree' way, it looks beautiful, refer to 'tree' in skeleton.
+

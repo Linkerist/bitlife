@@ -4,8 +4,10 @@
 #include "hash.h"
 #include "help.h"
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <unistd.h>
 
 /*
  * dflag - synchronize directories skeleton only
@@ -23,23 +25,80 @@ FILE *file_log;
 /* dir_ops.c : listing when synchronize */
 extern int level, *dirs, dir_level_max;
 
-/* start synchronize directories */
+/* get top directory index and name */
+void dir_parse_top(const char *dirname)
+{
+	char top[DEFAULT_PATH_SIZE];
+	char origin[DEFAULT_PATH_SIZE];
+	
+	top_idx = strlen(dirname) + 1;
+	
+	/* record original work directory */
+	if(NULL == getcwd(origin, DEFAULT_PATH_SIZE)) {
+		perror("getcwd()");
+		exit(1);
+	}
+	
+	/* get into target directory */
+	if(-1 == chdir(dirname)) {
+		perror("chdir()");
+		exit(1);
+	}
+	
+	/* get absolute path of target directory */
+	if(NULL == getcwd(top, DEFAULT_PATH_SIZE)) {
+		perror("getcwd()");
+		exit(1);
+	}
+	
+	/* once it is root directory */
+	if(!strcmp(top, "/")) {
+		/* get hostname for this synchronization */
+		if(-1 == gethostname(top, DEFAULT_HOSTNAME_SIZE)) {
+			fprintf(file_log, "cannot get hostname, / use %s as alias\n", TAG_ROOTFS_ALIAS);
+		} else {
+			strncat(top, TAG_LINKER, strlen(TRG_LINKER));
+			strncat(top, TAG_ROOTFS_ALIAS, strlen(TAG_ROOTFS_ALIAS));
+			dir_top = top;
+		}
+	} else {
+		dir_top = strrchr(top, '/');
+		dir_top++;
+	}
+	
+	if(-1 == chdir(dirname)) {
+		perror("chdir()");
+		exit(1);
+	}
+	printf("fasdfasdfa\n");
+	printf("%s - %s\n", dir_top, dir_dst);
+	fflush(stdout);
+	dir_dst_init();
+}
+
+/*
+ * start synchronize directories
+ * dirname - directories will be synchronize
+ */
 start_bitlife(char **dirname, int *dtotal, int *ftotal)
 {
 	int i, j;
 	if(dirname) {
 		for(i = 0; dirname[i]; i++) {
-			/* eat the '/' in the tail */
-			j = strlen(dirname[i]);
-			while(0 < j && '/' == dirname[i][--j])
-				;
-			dirname[i][j + 1] = '\0';
+			if(fflag) {
+				/* eat the '/' in the tail */
+				j = strlen(dirname[i]);
+				while(0 < j && '/' == dirname[i][--j])
+					;
+				dirname[i][j + 1] = '\0';
+			}
 			
 			dir_list(dirname[i]);
 			dir_parse_top(dirname[i]);
 			fprintf(file_log, "start synchronize .\n");
 			dir_sync_recur(dirname[i], pdtotal, pftotal, 0);
 		}
+	/* synchronize current directory as default */
 	} else {
 		fprintf(file_log, DEFAULT_DIR_SRC);
 		dir_parse_top(DEFAULT_DIR_SRC);
@@ -201,6 +260,7 @@ void log_close(char *filename)
 		fclose(file_log);
 }
 
+/* statistics after synchronization */
 void statistics(int dtotal, int ftotal)
 {
 	if(dflag)
