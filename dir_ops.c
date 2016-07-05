@@ -19,3 +19,4 @@ void dir_dst_init(void)
 	strftime(buf_time, TIME_SIZE, "%Y-%m-%d-%H-%M", tm);
 	dir_dst = strdup(dir_dst);
 }
+

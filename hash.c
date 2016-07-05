@@ -8,3 +8,4 @@ struct xtable {
 };
 
 struct xtable *gtable[256], *utable[256];
+
