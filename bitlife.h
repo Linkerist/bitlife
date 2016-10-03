@@ -10,7 +10,7 @@
 typedef enum {
 	FALSE = 0,
 	TRUE,
-}bool;
+} bool;
 
 void initialize(void);
 
@@ -25,3 +25,4 @@ void statistics(int dtotal, int ftotal);
 void log_close(char *filename);
 
 #endif
+
